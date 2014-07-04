@@ -389,9 +389,18 @@ void Net<Dtype>::ShareTrainedLayersWith(Net* other) {
     Layer<Dtype>* source_layer = other->layers()[i].get();
     const string& source_layer_name = other->layer_names()[i];
     int target_layer_id = 0;
-    while (target_layer_id != layer_names_.size() &&
-        layer_names_[target_layer_id] != source_layer_name) {
-      ++target_layer_id;
+    for (; target_layer_id < layers_.size(); ++target_layer_id) {
+      // If source_name was specified by this target layer, we check that for a
+      // match and ignore the layer's name.  Otherwise, we check for a match to
+      // the layer's name.
+      const string& source_name =
+          layers_[target_layer_id]->layer_param().source_name();
+      const string& target_name = layer_names_[target_layer_id];
+      if (((source_name.size() > 0) && (source_layer_name == source_name)) ||
+          ((source_name.size() == 0) && (target_name.size() > 0) &&
+           (source_layer_name == target_name))) {
+        break;
+      }
     }
     if (target_layer_id == layer_names_.size()) {
       DLOG(INFO) << "Ignoring source layer " << source_layer_name;
@@ -420,9 +429,18 @@ void Net<Dtype>::CopyTrainedLayersFrom(const NetParameter& param) {
     const LayerParameter& source_layer = param.layers(i);
     const string& source_layer_name = source_layer.name();
     int target_layer_id = 0;
-    while (target_layer_id != layer_names_.size() &&
-        layer_names_[target_layer_id] != source_layer_name) {
-      ++target_layer_id;
+    for (; target_layer_id < layers_.size(); ++target_layer_id) {
+      // If source_name was specified by this target layer, we check that for a
+      // match and ignore the layer's name.  Otherwise, we check for a match to
+      // the layer's name.
+      const string& source_name =
+          layers_[target_layer_id]->layer_param().source_name();
+      const string& target_name = layer_names_[target_layer_id];
+      if (((source_name.size() > 0) && (source_layer_name == source_name)) ||
+          ((source_name.size() == 0) && (target_name.size() > 0) &&
+           (source_layer_name == target_name))) {
+        break;
+      }
     }
     if (target_layer_id == layer_names_.size()) {
       DLOG(INFO) << "Ignoring source layer " << source_layer_name;

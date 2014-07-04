@@ -115,11 +115,17 @@ message SolverState {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available ID: 32 (last added: blob_share_mode)
+// LayerParameter next available ID: 33 (last added: source_name)
 message LayerParameter {
   repeated string bottom = 2; // the name of the bottom blobs
   repeated string top = 3; // the name of the top blobs
   optional string name = 4; // the layer name
+  // source_name specifies the name of a layer from a pretrained net
+  // from which this layer's weights are initialized.  If specified,
+  // layers with the same "name" as this layer in the pretrained net
+  // are ignored.  If unspecified (or empty), we look for layers with the same
+  // "nane" as this layer in the pretrained net.
+  optional string source_name = 33;
 
   // NOTE
   // Add new LayerTypes to the enum below in lexicographical order (other than
