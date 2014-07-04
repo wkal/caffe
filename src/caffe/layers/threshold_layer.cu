@@ -19,17 +19,15 @@ __global__ void ThresholdForward(const int n, const Dtype threshold,
 }
 
 template <typename Dtype>
-Dtype ThresholdLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
-    vector<Blob<Dtype>*>* top) {
-  const Dtype* bottom_data = bottom[0]->gpu_data();
-  Dtype* top_data = (*top)[0]->mutable_gpu_data();
-  const int count = bottom[0]->count();
+void ThresholdLayer<Dtype>::NeuronForward_gpu(const Blob<Dtype>& bottom,
+    Blob<Dtype>* top) {
+  const Dtype* bottom_data = bottom.gpu_data();
+  Dtype* top_data = top->mutable_gpu_data();
+  const int count = bottom.count();
   // NOLINT_NEXT_LINE(whitespace/operators)
   ThresholdForward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
       count, threshold_, bottom_data, top_data);
   CUDA_POST_KERNEL_CHECK;
-
-  return Dtype(0);
 }
 
 

@@ -13,9 +13,30 @@ void NeuronLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
   Layer<Dtype>::SetUp(bottom, top);
   // NeuronLayer allows in-place computations. If the computation is not
   // in-place, we will need to initialize the top blob.
-  if ((*top)[0] != bottom[0]) {
-    (*top)[0]->Reshape(bottom[0]->num(), bottom[0]->channels(),
-        bottom[0]->height(), bottom[0]->width());
+  for (int i = 0; i < bottom.size(); ++i) {
+    if ((*top)[i] != bottom[i]) {
+      (*top)[i]->Reshape(bottom[i]->num(), bottom[i]->channels(),
+          bottom[i]->height(), bottom[i]->width());
+    }
+  }
+}
+
+template <typename Dtype>
+Dtype NeuronLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      vector<Blob<Dtype>*>* top) {
+  for (int i = 0; i < bottom.size(); ++i) {
+    this->NeuronForward_cpu(*bottom[i], (*top)[i]);
+  }
+  return Dtype(0);
+}
+
+template <typename Dtype>
+void NeuronLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
+    const vector<bool>& propagate_down, vector<Blob<Dtype>*>* bottom) {
+  for (int i = 0; i < top.size(); ++i) {
+    if (propagate_down[i]) {
+      this->NeuronBackward_cpu(*top[i], (*bottom)[i]);
+    }
   }
 }
 

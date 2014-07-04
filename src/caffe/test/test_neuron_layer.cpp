@@ -21,19 +21,25 @@ template <typename Dtype>
 class NeuronLayerTest : public ::testing::Test {
  protected:
   NeuronLayerTest()
-      : blob_bottom_(new Blob<Dtype>(2, 3, 4, 5)),
-        blob_top_(new Blob<Dtype>()) {
+      : blob_bottom_(new Blob<Dtype>(2, 3, 2, 5)),
+        blob_bottom_2_(new Blob<Dtype>(2, 3, 1, 5)),
+        blob_top_(new Blob<Dtype>()),
+        blob_top_2_(new Blob<Dtype>()) {
     Caffe::set_random_seed(1701);
     // fill the values
     FillerParameter filler_param;
     GaussianFiller<Dtype> filler(filler_param);
     filler.Fill(this->blob_bottom_);
     blob_bottom_vec_.push_back(blob_bottom_);
+    blob_bottom_vec_.push_back(blob_bottom_2_);
     blob_top_vec_.push_back(blob_top_);
+    blob_top_vec_.push_back(blob_top_2_);
   }
   virtual ~NeuronLayerTest() { delete blob_bottom_; delete blob_top_; }
   Blob<Dtype>* const blob_bottom_;
+  Blob<Dtype>* const blob_bottom_2_;
   Blob<Dtype>* const blob_top_;
+  Blob<Dtype>* const blob_top_2_;
   vector<Blob<Dtype>*> blob_bottom_vec_;
   vector<Blob<Dtype>*> blob_top_vec_;
 };
@@ -48,14 +54,15 @@ TYPED_TEST(NeuronLayerTest, TestReLUCPU) {
   layer.SetUp(this->blob_bottom_vec_, &(this->blob_top_vec_));
   layer.Forward(this->blob_bottom_vec_, &(this->blob_top_vec_));
   // Now, check values
-  const TypeParam* bottom_data = this->blob_bottom_->cpu_data();
-  const TypeParam* top_data = this->blob_top_->cpu_data();
-  for (int i = 0; i < this->blob_bottom_->count(); ++i) {
-    EXPECT_GE(top_data[i], 0.);
-    EXPECT_TRUE(top_data[i] == 0 || top_data[i] == bottom_data[i]);
+  for (int i = 0; i < this->blob_bottom_vec_.size(); ++i) {
+    const TypeParam* bottom_data = this->blob_bottom_vec_[i]->cpu_data();
+    const TypeParam* top_data = this->blob_top_vec_[i]->cpu_data();
+    for (int j = 0; j < this->blob_bottom_vec_[i]->count(); ++j) {
+      EXPECT_GE(top_data[j], 0.);
+      EXPECT_TRUE(top_data[j] == 0 || top_data[j] == bottom_data[j]);
+    }
   }
 }
-
 
 TYPED_TEST(NeuronLayerTest, TestReLUGradientCPU) {
   LayerParameter layer_param;
@@ -66,7 +73,6 @@ TYPED_TEST(NeuronLayerTest, TestReLUGradientCPU) {
       &(this->blob_top_vec_));
 }
 
-
 TYPED_TEST(NeuronLayerTest, TestReLUGPU) {
   LayerParameter layer_param;
   Caffe::set_mode(Caffe::GPU);
@@ -74,14 +80,15 @@ TYPED_TEST(NeuronLayerTest, TestReLUGPU) {
   layer.SetUp(this->blob_bottom_vec_, &(this->blob_top_vec_));
   layer.Forward(this->blob_bottom_vec_, &(this->blob_top_vec_));
   // Now, check values
-  const TypeParam* bottom_data = this->blob_bottom_->cpu_data();
-  const TypeParam* top_data = this->blob_top_->cpu_data();
-  for (int i = 0; i < this->blob_bottom_->count(); ++i) {
-    EXPECT_GE(top_data[i], 0.);
-    EXPECT_TRUE(top_data[i] == 0 || top_data[i] == bottom_data[i]);
+  for (int i = 0; i < this->blob_bottom_vec_.size(); ++i) {
+    const TypeParam* bottom_data = this->blob_bottom_vec_[i]->cpu_data();
+    const TypeParam* top_data = this->blob_top_vec_[i]->cpu_data();
+    for (int j = 0; j < this->blob_bottom_vec_[i]->count(); ++j) {
+      EXPECT_GE(top_data[j], 0.);
+      EXPECT_TRUE(top_data[j] == 0 || top_data[j] == bottom_data[j]);
+    }
   }
 }
-
 
 TYPED_TEST(NeuronLayerTest, TestReLUGradientGPU) {
   LayerParameter layer_param;
@@ -92,7 +99,6 @@ TYPED_TEST(NeuronLayerTest, TestReLUGradientGPU) {
       &(this->blob_top_vec_));
 }
 
-
 TYPED_TEST(NeuronLayerTest, TestSigmoidCPU) {
   LayerParameter layer_param;
   Caffe::set_mode(Caffe::CPU);
@@ -100,16 +106,17 @@ TYPED_TEST(NeuronLayerTest, TestSigmoidCPU) {
   layer.SetUp(this->blob_bottom_vec_, &(this->blob_top_vec_));
   layer.Forward(this->blob_bottom_vec_, &(this->blob_top_vec_));
   // Now, check values
-  const TypeParam* bottom_data = this->blob_bottom_->cpu_data();
-  const TypeParam* top_data = this->blob_top_->cpu_data();
-  for (int i = 0; i < this->blob_bottom_->count(); ++i) {
-    EXPECT_FLOAT_EQ(top_data[i], 1. / (1 + exp(-bottom_data[i])));
-    // check that we squashed the value between 0 and 1
-    EXPECT_GE(top_data[i], 0.);
-    EXPECT_LE(top_data[i], 1.);
+  for (int i = 0; i < this->blob_bottom_vec_.size(); ++i) {
+    const TypeParam* bottom_data = this->blob_bottom_vec_[i]->cpu_data();
+    const TypeParam* top_data = this->blob_top_vec_[i]->cpu_data();
+    for (int j = 0; j < this->blob_bottom_vec_[i]->count(); ++j) {
+      EXPECT_FLOAT_EQ(top_data[j], 1. / (1 + exp(-bottom_data[j])));
+      // check that we squashed the value between 0 and 1
+      EXPECT_GE(top_data[j], 0.);
+      EXPECT_LE(top_data[j], 1.);
+    }
   }
 }
-
 
 TYPED_TEST(NeuronLayerTest, TestSigmoidGradientCPU) {
   LayerParameter layer_param;
@@ -127,16 +134,17 @@ TYPED_TEST(NeuronLayerTest, TestSigmoidGPU) {
   layer.SetUp(this->blob_bottom_vec_, &(this->blob_top_vec_));
   layer.Forward(this->blob_bottom_vec_, &(this->blob_top_vec_));
   // Now, check values
-  const TypeParam* bottom_data = this->blob_bottom_->cpu_data();
-  const TypeParam* top_data = this->blob_top_->cpu_data();
-  for (int i = 0; i < this->blob_bottom_->count(); ++i) {
-    EXPECT_FLOAT_EQ(top_data[i], 1. / (1 + exp(-bottom_data[i])));
-    // check that we squashed the value between 0 and 1
-    EXPECT_GE(top_data[i], 0.);
-    EXPECT_LE(top_data[i], 1.);
+  for (int i = 0; i < this->blob_bottom_vec_.size(); ++i) {
+    const TypeParam* bottom_data = this->blob_bottom_vec_[i]->cpu_data();
+    const TypeParam* top_data = this->blob_top_vec_[i]->cpu_data();
+    for (int j = 0; j < this->blob_bottom_vec_[i]->count(); ++j) {
+      EXPECT_FLOAT_EQ(top_data[j], 1. / (1 + exp(-bottom_data[j])));
+      // check that we squashed the value between 0 and 1
+      EXPECT_GE(top_data[j], 0.);
+      EXPECT_LE(top_data[j], 1.);
+    }
   }
 }
-
 
 TYPED_TEST(NeuronLayerTest, TestSigmoidGradientGPU) {
   LayerParameter layer_param;
@@ -147,8 +155,6 @@ TYPED_TEST(NeuronLayerTest, TestSigmoidGradientGPU) {
       &(this->blob_top_vec_));
 }
 
-
-
 TYPED_TEST(NeuronLayerTest, TestDropoutCPU) {
   LayerParameter layer_param;
   Caffe::set_mode(Caffe::CPU);
@@ -157,16 +163,17 @@ TYPED_TEST(NeuronLayerTest, TestDropoutCPU) {
   layer.SetUp(this->blob_bottom_vec_, &(this->blob_top_vec_));
   layer.Forward(this->blob_bottom_vec_, &(this->blob_top_vec_));
   // Now, check values
-  const TypeParam* bottom_data = this->blob_bottom_->cpu_data();
-  const TypeParam* top_data = this->blob_top_->cpu_data();
-  float scale = 1. / (1. - layer_param.dropout_param().dropout_ratio());
-  for (int i = 0; i < this->blob_bottom_->count(); ++i) {
-    if (top_data[i] != 0) {
-      EXPECT_EQ(top_data[i], bottom_data[i] * scale);
+  const float scale = 1. / (1. - layer_param.dropout_param().dropout_ratio());
+  for (int i = 0; i < this->blob_bottom_vec_.size(); ++i) {
+    const TypeParam* bottom_data = this->blob_bottom_vec_[i]->cpu_data();
+    const TypeParam* top_data = this->blob_top_vec_[i]->cpu_data();
+    for (int j = 0; j < this->blob_bottom_vec_[i]->count(); ++j) {
+      if (top_data[j] != 0) {
+        EXPECT_EQ(top_data[j], bottom_data[j] * scale);
+      }
     }
   }
 }
-
 
 TYPED_TEST(NeuronLayerTest, TestDropoutGradientCPU) {
   LayerParameter layer_param;
@@ -205,7 +212,6 @@ TYPED_TEST(NeuronLayerTest, TestDropoutCPUTestPhase) {
   }
 }
 
-
 TYPED_TEST(NeuronLayerTest, TestDropoutGPU) {
   LayerParameter layer_param;
   Caffe::set_mode(Caffe::GPU);
@@ -214,41 +220,41 @@ TYPED_TEST(NeuronLayerTest, TestDropoutGPU) {
   layer.SetUp(this->blob_bottom_vec_, &(this->blob_top_vec_));
   layer.Forward(this->blob_bottom_vec_, &(this->blob_top_vec_));
   // Now, check values
-  const TypeParam* bottom_data = this->blob_bottom_->cpu_data();
-  const TypeParam* top_data = this->blob_top_->cpu_data();
-  float scale = 1. / (1. - layer_param.dropout_param().dropout_ratio());
-  for (int i = 0; i < this->blob_bottom_->count(); ++i) {
-    if (top_data[i] != 0) {
-      EXPECT_EQ(top_data[i], bottom_data[i] * scale);
+  const float scale = 1. / (1. - layer_param.dropout_param().dropout_ratio());
+  for (int i = 0; i < this->blob_bottom_vec_.size(); ++i) {
+    const TypeParam* bottom_data = this->blob_bottom_vec_[i]->cpu_data();
+    const TypeParam* top_data = this->blob_top_vec_[i]->cpu_data();
+    for (int j = 0; j < this->blob_bottom_vec_[i]->count(); ++j) {
+      if (top_data[j] != 0) {
+        EXPECT_EQ(top_data[j], bottom_data[j] * scale);
+      }
     }
   }
 }
 
-
 TYPED_TEST(NeuronLayerTest, TestDropoutGradientGPU) {
-    LayerParameter layer_param;
-    Caffe::set_mode(Caffe::GPU);
-    Caffe::set_phase(Caffe::TRAIN);
-    DropoutLayer<TypeParam> layer(layer_param);
-    GradientChecker<TypeParam> checker(1e-2, 1e-3);
-    // it is too expensive to call curand multiple times, so we don't do an
-    // exhaustive gradient check.
-    checker.CheckGradient(&layer, &(this->blob_bottom_vec_),
-        &(this->blob_top_vec_));
+  LayerParameter layer_param;
+  Caffe::set_mode(Caffe::GPU);
+  Caffe::set_phase(Caffe::TRAIN);
+  DropoutLayer<TypeParam> layer(layer_param);
+  GradientChecker<TypeParam> checker(1e-2, 1e-3);
+  // it is too expensive to call curand multiple times, so we don't do an
+  // exhaustive gradient check.
+  checker.CheckGradient(&layer, &(this->blob_bottom_vec_),
+      &(this->blob_top_vec_));
 }
 
 TYPED_TEST(NeuronLayerTest, TestDropoutGradientGPUTest) {
-    LayerParameter layer_param;
-    Caffe::set_mode(Caffe::GPU);
-    Caffe::set_phase(Caffe::TEST);
-    DropoutLayer<TypeParam> layer(layer_param);
-    GradientChecker<TypeParam> checker(1e-2, 1e-3);
-    // it is too expensive to call curand multiple times, so we don't do an
-    // exhaustive gradient check.
-    checker.CheckGradient(&layer, &(this->blob_bottom_vec_),
-        &(this->blob_top_vec_));
+  LayerParameter layer_param;
+  Caffe::set_mode(Caffe::GPU);
+  Caffe::set_phase(Caffe::TEST);
+  DropoutLayer<TypeParam> layer(layer_param);
+  GradientChecker<TypeParam> checker(1e-2, 1e-3);
+  // it is too expensive to call curand multiple times, so we don't do an
+  // exhaustive gradient check.
+  checker.CheckGradient(&layer, &(this->blob_bottom_vec_),
+      &(this->blob_top_vec_));
 }
-
 
 TYPED_TEST(NeuronLayerTest, TestDropoutGPUTestPhase) {
   LayerParameter layer_param;
@@ -267,7 +273,6 @@ TYPED_TEST(NeuronLayerTest, TestDropoutGPUTestPhase) {
   }
 }
 
-
 TYPED_TEST(NeuronLayerTest, TestBNLLCPU) {
   LayerParameter layer_param;
   Caffe::set_mode(Caffe::CPU);
@@ -275,14 +280,15 @@ TYPED_TEST(NeuronLayerTest, TestBNLLCPU) {
   layer.SetUp(this->blob_bottom_vec_, &(this->blob_top_vec_));
   layer.Forward(this->blob_bottom_vec_, &(this->blob_top_vec_));
   // Now, check values
-  const TypeParam* bottom_data = this->blob_bottom_->cpu_data();
-  const TypeParam* top_data = this->blob_top_->cpu_data();
-  for (int i = 0; i < this->blob_bottom_->count(); ++i) {
-    EXPECT_GE(top_data[i], 0.);
-    EXPECT_GE(top_data[i], bottom_data[i]);
+  for (int i = 0; i < this->blob_bottom_vec_.size(); ++i) {
+    const TypeParam* bottom_data = this->blob_bottom_vec_[i]->cpu_data();
+    const TypeParam* top_data = this->blob_top_vec_[i]->cpu_data();
+    for (int j = 0; j < this->blob_bottom_vec_[i]->count(); ++j) {
+      EXPECT_GE(top_data[j], 0.);
+      EXPECT_GE(top_data[j], bottom_data[j]);
+    }
   }
 }
-
 
 TYPED_TEST(NeuronLayerTest, TestBNLLGradientCPU) {
   LayerParameter layer_param;
@@ -293,7 +299,6 @@ TYPED_TEST(NeuronLayerTest, TestBNLLGradientCPU) {
       &(this->blob_top_vec_));
 }
 
-
 TYPED_TEST(NeuronLayerTest, TestBNLLGPU) {
   LayerParameter layer_param;
   Caffe::set_mode(Caffe::GPU);
@@ -301,14 +306,15 @@ TYPED_TEST(NeuronLayerTest, TestBNLLGPU) {
   layer.SetUp(this->blob_bottom_vec_, &(this->blob_top_vec_));
   layer.Forward(this->blob_bottom_vec_, &(this->blob_top_vec_));
   // Now, check values
-  const TypeParam* bottom_data = this->blob_bottom_->cpu_data();
-  const TypeParam* top_data = this->blob_top_->cpu_data();
-  for (int i = 0; i < this->blob_bottom_->count(); ++i) {
-    EXPECT_GE(top_data[i], 0.);
-    EXPECT_GE(top_data[i], bottom_data[i]);
+  for (int i = 0; i < this->blob_bottom_vec_.size(); ++i) {
+    const TypeParam* bottom_data = this->blob_bottom_vec_[i]->cpu_data();
+    const TypeParam* top_data = this->blob_top_vec_[i]->cpu_data();
+    for (int j = 0; j < this->blob_bottom_vec_[i]->count(); ++j) {
+      EXPECT_GE(top_data[j], 0.);
+      EXPECT_GE(top_data[j], bottom_data[j]);
+    }
   }
 }
-
 
 TYPED_TEST(NeuronLayerTest, TestBNLLGradientGPU) {
   LayerParameter layer_param;
@@ -318,6 +324,5 @@ TYPED_TEST(NeuronLayerTest, TestBNLLGradientGPU) {
   checker.CheckGradientEltwise(&layer, &(this->blob_bottom_vec_),
       &(this->blob_top_vec_));
 }
-
 
 }  // namespace caffe

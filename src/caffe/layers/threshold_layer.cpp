@@ -16,15 +16,14 @@ void ThresholdLayer<Dtype>::SetUp(const vector<Blob<Dtype>*>& bottom,
 }
 
 template <typename Dtype>
-Dtype ThresholdLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
-    vector<Blob<Dtype>*>* top) {
-  const Dtype* bottom_data = bottom[0]->cpu_data();
-  Dtype* top_data = (*top)[0]->mutable_cpu_data();
-  const int count = bottom[0]->count();
+void ThresholdLayer<Dtype>::NeuronForward_cpu(const Blob<Dtype>& bottom,
+    Blob<Dtype>* top) {
+  const Dtype* bottom_data = bottom.cpu_data();
+  Dtype* top_data = top->mutable_cpu_data();
+  const int count = bottom.count();
   for (int i = 0; i < count; ++i) {
     top_data[i] = (bottom_data[i] > threshold_) ? Dtype(1) : Dtype(0);
   }
-  return Dtype(0);
 }
 
 INSTANTIATE_CLASS(ThresholdLayer);

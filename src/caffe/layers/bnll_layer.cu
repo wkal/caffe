@@ -22,16 +22,15 @@ __global__ void BNLLForward(const int n, const Dtype* in, Dtype* out) {
 }
 
 template <typename Dtype>
-Dtype BNLLLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
-    vector<Blob<Dtype>*>* top) {
-  const Dtype* bottom_data = bottom[0]->gpu_data();
-  Dtype* top_data = (*top)[0]->mutable_gpu_data();
-  const int count = bottom[0]->count();
+void BNLLLayer<Dtype>::NeuronForward_gpu(const Blob<Dtype>& bottom,
+    Blob<Dtype>* top) {
+  const Dtype* bottom_data = bottom.gpu_data();
+  Dtype* top_data = top->mutable_gpu_data();
+  const int count = bottom.count();
   // NOLINT_NEXT_LINE(whitespace/operators)
   BNLLForward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
       count, bottom_data, top_data);
   CUDA_POST_KERNEL_CHECK;
-  return Dtype(0);
 }
 
 template <typename Dtype>
@@ -44,19 +43,16 @@ __global__ void BNLLBackward(const int n, const Dtype* in_diff,
 }
 
 template <typename Dtype>
-void BNLLLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
-    const vector<bool>& propagate_down,
-    vector<Blob<Dtype>*>* bottom) {
-  if (propagate_down[0]) {
-    const Dtype* bottom_data = (*bottom)[0]->gpu_data();
-    const Dtype* top_diff = top[0]->gpu_diff();
-    Dtype* bottom_diff = (*bottom)[0]->mutable_gpu_diff();
-    const int count = (*bottom)[0]->count();
-    // NOLINT_NEXT_LINE(whitespace/operators)
-    BNLLBackward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
-        count, top_diff, bottom_data, bottom_diff);
-    CUDA_POST_KERNEL_CHECK;
-  }
+void BNLLLayer<Dtype>::NeuronBackward_gpu(const Blob<Dtype>& top,
+    Blob<Dtype>* bottom) {
+  const Dtype* bottom_data = bottom->gpu_data();
+  const Dtype* top_diff = top.gpu_diff();
+  Dtype* bottom_diff = bottom->mutable_gpu_diff();
+  const int count = bottom->count();
+  // NOLINT_NEXT_LINE(whitespace/operators)
+  BNLLBackward<Dtype><<<CAFFE_GET_BLOCKS(count), CAFFE_CUDA_NUM_THREADS>>>(
+      count, top_diff, bottom_data, bottom_diff);
+  CUDA_POST_KERNEL_CHECK;
 }
 
 INSTANTIATE_CLASS(BNLLLayer);
