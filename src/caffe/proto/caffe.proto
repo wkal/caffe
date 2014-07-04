@@ -115,7 +115,7 @@ message SolverState {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available ID: 28 (last added: accuracy_param)
+// LayerParameter next available ID: 32 (last added: blob_share_mode)
 message LayerParameter {
   repeated string bottom = 2; // the name of the bottom blobs
   repeated string top = 3; // the name of the top blobs
@@ -172,10 +172,10 @@ message LayerParameter {
   repeated BlobProto blobs = 6;
   // The names of the parameter blobs -- useful for sharing parameters among
   // layers (but never required).
-  repeated string param = 1001;
+  repeated string param = 30;
   // Whether to require shared weights to have the same shape, or just the same
   // count -- defaults to STRICT if unspecified.
-  repeated DimCheckMode blob_share_mode = 1002;
+  repeated DimCheckMode blob_share_mode = 31;
   enum DimCheckMode {
     // STRICT (default) requires that num, channels, height, width each match.
     STRICT = 0;
