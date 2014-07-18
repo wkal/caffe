@@ -117,6 +117,11 @@ class Net {
 
  protected:
   // Helpers for Init.
+  // Remove layers that the user specified should be excluded given the current
+  // phase, level, and stage.
+  void FilterParam(const NetParameter& param, NetParameter* param_filtered);
+  bool StateMeetsRule(const NetState& state, const NetStateRule& rule,
+      const string& layer_name);
   // Append a new input or top blob to the net.
   void AppendTop(const NetParameter& param, const int layer_id,
                  const int top_id, set<string>* available_blobs,

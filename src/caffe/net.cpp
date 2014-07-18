@@ -32,11 +32,14 @@ Net<Dtype>::Net(const string& param_file) {
 
 template <typename Dtype>
 void Net<Dtype>::Init(const NetParameter& in_param) {
+  // Filter layers based on their enable/disable rules and the current NetState.
+  NetParameter filtered_param;
+  FilterParam(in_param, &filtered_param);
   LOG(INFO) << "Initializing net from parameters: " << std::endl
-            << in_param.DebugString();
-  // Create a copy of in_param with splits added where necessary.
+            << filtered_param.DebugString();
+  // Create a copy of filtered_param with splits added where necessary.
   NetParameter param;
-  InsertSplits(in_param, &param);
+  InsertSplits(filtered_param, &param);
   // Basically, build all the layers and set up its connections.
   name_ = param.name();
   map<string, int> blob_name_to_idx;
@@ -165,6 +168,85 @@ void Net<Dtype>::Init(const NetParameter& in_param) {
   LOG(INFO) << "Memory required for data: " << memory_used_ * sizeof(Dtype);
   // Don't display debug info by default.
   debug_info_ = false;
+}
+
+template <typename Dtype>
+void Net<Dtype>::FilterParam(const NetParameter& param,
+    NetParameter* param_filtered) {
+  const NetState& net_state = param.state();
+  param_filtered->CopyFrom(param);
+  param_filtered->clear_layers();
+  for (int i = 0; i < param.layers_size(); ++i) {
+    const LayerParameter& layer_param = param.layers(i);
+    const string& layer_name = layer_param.name();
+    CHECK(layer_param.enable_size() == 0 || layer_param.disable_size() == 0)
+          << "Specify either enable rules or disable rules; not both.";
+    // If no enable rules are specified, the layer is enabled by default and
+    // only disabled if it meets one of the disable rules.
+    bool layer_enabled = (layer_param.enable_size() == 0);
+    for (int j = 0; layer_enabled && j < layer_param.disable_size(); ++j) {
+      if (StateMeetsRule(net_state, layer_param.disable(j), layer_name)) {
+        layer_enabled = false;
+      }
+    }
+    for (int j = 0; !layer_enabled && j < layer_param.enable_size(); ++j) {
+      if (StateMeetsRule(net_state, layer_param.enable(j), layer_name)) {
+        layer_enabled = true;
+      }
+    }
+    if (layer_enabled) {
+      param_filtered->add_layers()->CopyFrom(layer_param);
+    }
+  }
+}
+
+template <typename Dtype>
+bool Net<Dtype>::StateMeetsRule(const NetState& state,
+    const NetStateRule& rule, const string& layer_name) {
+  // Check whether the rule is broken due to phase.
+  if (rule.has_phase()) {
+      if (rule.phase() != state.phase()) {
+        LOG(INFO) << "The NetState phase (" << state.phase()
+          << ") differed from the phase (" << rule.phase()
+          << ") specified by a rule in layer " << layer_name;
+        return false;
+      }
+  }
+  // Check whether the rule is broken due to min level.
+  if (rule.has_min_level()) {
+    if (state.level() < rule.min_level()) {
+      LOG(INFO) << "The NetState level (" << state.level()
+          << ") is above the min_level (" << rule.min_level()
+          << " specified by a rule in layer " << layer_name;
+      return false;
+    }
+  }
+  // Check whether the rule is broken due to max level.
+  if (rule.has_max_level()) {
+    if (state.level() > rule.max_level()) {
+      LOG(INFO) << "The NetState level (" << state.level()
+          << ") is above the max_level (" << rule.max_level()
+          << " specified by a rule in layer " << layer_name;
+      return false;
+    }
+  }
+  // Check whether the rule is broken due to stage. If stage is specified,
+  // the NetState must contain ALL of the rule's stages to meet it.
+  if (rule.stage_size()) {
+    for (int i = 0; i < rule.stage_size(); ++i) {
+      // Check that the NetState contains the rule's ith stage.
+      bool has_stage = false;
+      for (int j = 0; !has_stage && j < state.stage_size(); ++j) {
+        if (rule.stage(i) == state.stage(j)) { has_stage = true; }
+      }
+      if (!has_stage) {
+        LOG(INFO) << "The NetState did not contain stage '" << rule.stage(i)
+                  << "' specified by a rule in layer " << layer_name;
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 // Helper for Net::Init: add a new input or top blob to the net.  (Inputs have
