@@ -273,17 +273,61 @@ void Solver<Dtype>::Test(const int test_net_id) {
   Caffe::set_phase(Caffe::TRAIN);
 }
 
+template <typename Dtype>
+void Solver<Dtype>::SnapshotFilename(const int iter, string* filename) {
+  filename->clear();
+  *filename = param_.snapshot_prefix();
+  const int kBufferSize = 20;
+  char iter_str_buffer[kBufferSize];
+  snprintf(iter_str_buffer, kBufferSize, "_iter_%d", iter_);
+  *filename += iter_str_buffer;
+}
+
+template <typename Dtype>
+bool Solver<Dtype>::LastSavedSnapshot(string* snapshot_filename) {
+  int interval = param_.snapshot();
+  if (interval <= 0 || interval >= param_.max_iter()) {
+    if (param_.snapshot_after_train()) {
+      // interval wasn't set (or was set to <= 0 or >= max_iter explicitly);
+      // a snapshot will only be saved once training is complete, at max_iter
+      // at max_iter (assuming snapshot_after_train is true).
+      interval = param_.max_iter();
+    } else {
+      // interval was out of range and snapshot_after_train == false --
+      // no snapshots, nothing to do.
+      snapshot_filename->clear();
+      return false;
+    }
+  }
+
+  // Find the last iteration with an existing snapshot file.
+  // Loop over possible filenames (<snapshot_prefix>_<iter>) until we find
+  // one that doesn't exist.
+  int last_snapshot_iter = -1;
+  for (int snapshot_iter = interval; snapshot_iter <= param_.max_iter();
+       snapshot_iter += interval) {
+    SnapshotFilename(snapshot_iter, snapshot_filename);
+    if (FileExists(snapshot_filename->c_str())) {
+      last_snapshot_iter = snapshot_iter;
+    } else {
+      break;
+    }
+  }
+
+  if (last_snapshot_iter == -1) {
+    snapshot_filename->clear();
+    return false;
+  }
+  return true;
+}
 
 template <typename Dtype>
 void Solver<Dtype>::Snapshot() {
   NetParameter net_param;
   // For intermediate results, we will also dump the gradient values.
   net_->ToProto(&net_param, param_.snapshot_diff());
-  string filename(param_.snapshot_prefix());
-  const int kBufferSize = 20;
-  char iter_str_buffer[kBufferSize];
-  snprintf(iter_str_buffer, kBufferSize, "_iter_%d", iter_);
-  filename += iter_str_buffer;
+  string filename;
+  SnapshotFilename(iter_, &filename);
   LOG(INFO) << "Snapshotting to " << filename;
   WriteProtoToBinaryFile(net_param, filename.c_str());
   SolverState state;

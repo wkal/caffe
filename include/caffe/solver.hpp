@@ -32,6 +32,10 @@ class Solver {
   virtual void PreSolve() {}
   // Get the update value for the current iteration.
   virtual void ComputeUpdateValue() = 0;
+  // Outputs the filename of snapshot at iteration "iter" into string* filename.
+  void SnapshotFilename(const int iter, string* filename);
+  // CheckSnapshots looks for existing snapshots with filenames as specified by
+  bool LastSavedSnapshot(string* last_snapshot_filename);
   // The Solver::Snapshot function implements the basic snapshotting utility
   // that stores the learned net. You should implement the SnapshotSolverState()
   // function that produces a SolverState protocol buffer that needs to be

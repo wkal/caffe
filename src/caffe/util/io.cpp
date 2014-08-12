@@ -27,6 +27,15 @@ using google::protobuf::io::ZeroCopyOutputStream;
 using google::protobuf::io::CodedOutputStream;
 using google::protobuf::Message;
 
+bool FileExists(const char* filename) {
+  int fd = open(filename, O_RDONLY);
+  if (fd >= 0) {
+    close(fd);
+    return true;
+  }
+  return false;
+}
+
 bool ReadProtoFromTextFile(const char* filename, Message* proto) {
   int fd = open(filename, O_RDONLY);
   CHECK_NE(fd, -1) << "File not found: " << filename;

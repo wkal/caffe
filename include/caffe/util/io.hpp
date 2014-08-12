@@ -16,6 +16,8 @@ namespace caffe {
 
 using ::google::protobuf::Message;
 
+bool FileExists(const char* filename);
+
 bool ReadProtoFromTextFile(const char* filename, Message* proto);
 
 inline bool ReadProtoFromTextFile(const string& filename, Message* proto) {
