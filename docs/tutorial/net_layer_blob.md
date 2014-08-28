@@ -43,6 +43,8 @@ The net is defined as a set of layers and their connections in a plaintext model
 
 TODO excerpt proto definition and prototxt for regression, MNIST, ImageNet
 
+TODO walk through Net::Init() output
+
 The network is run on CPU or GPU by setting a single switch. Layers come with corresponding CPU and GPU routines that produce identical results (with tests to prove it). The CPU / GPU switch is seamless and independent of the model definition. For research and deployment alike it is best to divide model and implementation.
 
 ## Blob storage and communication
