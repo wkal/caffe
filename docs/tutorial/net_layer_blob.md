@@ -53,12 +53,12 @@ Blobs conceal the computational and mental overhead of mixed CPU/GPU operation b
 
 Memory on the host and device is allocated on demand (lazily) for efficient memory usage.
 
-The conventional blob dimensions for data are batch B x channel C x height H x width W. Blob memory is row-major in layout so the last / rightmost dimension changes fastest.
+The conventional blob dimensions for data are number N x channel K x height H x width W. Blob memory is row-major in layout so the last / rightmost dimension changes fastest.
 
-- Batch / B is the index of a data point in a batch. Batch processing achieves better throughput for communication and device processing. For an ImageNet training batch of 256 images B = 256.
-- Channel / C is the index of the feature dimension e.g. for RGB images C = 3.
+- Number / N is the batch size of the data. Batch processing achieves better throughput for communication and device processing. For an ImageNet training batch of 256 images B = 256.
+- Channel / K is the feature dimension e.g. for RGB images K = 3.
 
-Caffe operations are general with respect to the channel dimension / C. Grayscale and hyperspectral imagery are fine. Caffe can likewise model and process arbitrary vectors in blobs with singleton. That is, the shape of blob holding 1000 vectors of 16 feature dimensions is 1000 x 16 x 1 x 1.
+Caffe operations are general with respect to the channel dimension / K. Grayscale and hyperspectral imagery are fine. Caffe can likewise model and process arbitrary vectors in blobs with singleton. That is, the shape of blob holding 1000 vectors of 16 feature dimensions is 1000 x 16 x 1 x 1.
 
 Parameter blob dimensions vary according to the type and configuration of the layer. For a convolution layer with 96 filters of 11 x 11 spatial dimension and 3 inputs the blob is 96 x 3 x 11 x 11. For an inner product / fully-connected layer with 1000 output channels and 1024 input channels the parameter blob is 1 x 1 x 1000 x 4096.
 
