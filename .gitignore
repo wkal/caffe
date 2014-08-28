@@ -62,6 +62,7 @@ data/*
 docs/_site
 docs/gathered
 _site
+doxygen/
 
 # Sublime Text settings
 *.sublime-workspace
