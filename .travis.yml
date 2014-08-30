@@ -6,6 +6,7 @@ env:
     - WITH_CUDA=false WITH_CMAKE=true
     - WITH_CUDA=true WITH_CMAKE=false
     - WITH_CUDA=true WITH_CMAKE=true
+    - BUILD_DOCS=true WITH_CUDA=false WITH_CMAKE=false
 
 language: cpp
 

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# if $BUILD_DOCS is set, just install Doxygen.
+if [[ ! -z "$BUILD_DOCS" ]]; then
+    sudo apt-get install doxygen
+fi
+
 # Install apt packages where the Ubuntu 12.04 default works for Caffe
 sudo apt-get -y update
 sudo apt-get install \

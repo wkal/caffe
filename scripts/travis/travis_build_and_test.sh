@@ -1,6 +1,14 @@
 #!/bin/bash
 # Script called by Travis to do a CPU-only build of and test Caffe.
 
+# if $BUILD_DOCS is set, just build the docs
+if [[ ! -z "$BUILD_DOCS" ]]; then
+    make docs
+    python -m SimpleHTTPServer &
+    sleep 600  # sleep for 10 minutes while the user reads the served documentation
+    exit 0
+fi
+
 if $WITH_CMAKE; then
   mkdir build
   cd build
