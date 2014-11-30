@@ -21,6 +21,7 @@ void Blob<Dtype>::Reshape(const int num, const int channels, const int height,
     capacity_ = count_;
     data_.reset(new SyncedMemory(capacity_ * sizeof(Dtype)));
     diff_.reset(new SyncedMemory(capacity_ * sizeof(Dtype)));
+    //LOG(INFO) << ((const Dtype*)data_->cpu_data())[0] << "\n";
   }
 }
 
