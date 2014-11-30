@@ -27,6 +27,8 @@ DEFINE_string(snapshot, "",
 DEFINE_string(weights, "",
     "Optional; the pretrained weights to initialize finetuning. "
     "Cannot be set simultaneously with snapshot.");
+DEFINE_string(terms, "",
+    "Optional; the term names. ");
 DEFINE_int32(iterations, 50,
     "The number of iterations to run.");
 
@@ -129,6 +131,8 @@ int test() {
   CHECK_GT(FLAGS_model.size(), 0) << "Need a model definition to score.";
   CHECK_GT(FLAGS_weights.size(), 0) << "Need model weights to score.";
 
+
+
   // Set device id and mode
   if (FLAGS_gpu >= 0) {
     LOG(INFO) << "Use GPU with device ID " << FLAGS_gpu;
@@ -147,7 +151,9 @@ int test() {
   vector<Blob<float>* > bottom_vec;
   vector<int> test_score_output_id;
   vector<float> test_score;
+  vector<float> test_num;
   float loss = 0;
+  float score_sum = 0;
   for (int i = 0; i < FLAGS_iterations; ++i) {
     float iter_loss;
     const vector<Blob<float>*>& result =
@@ -156,22 +162,58 @@ int test() {
     int idx = 0;
     for (int j = 0; j < result.size(); ++j) {
       const float* result_vec = result[j]->cpu_data();
-      for (int k = 0; k < result[j]->count(); ++k, ++idx) {
-        const float score = result_vec[k];
+      for (int k = 0; k < result[j]->count()/2-1; ++k, ++idx) {
+        const float score = result_vec[2*k];
+        const float num_examples = result_vec[2*k+1];
+
+
         if (i == 0) {
           test_score.push_back(score);
+          test_num.push_back(num_examples);
           test_score_output_id.push_back(j);
         } else {
           test_score[idx] += score;
+          test_num[idx] += num_examples;
         }
         const std::string& output_name = caffe_net.blob_names()[
             caffe_net.output_blob_indices()[j]];
-        LOG(INFO) << "Batch " << i << ", " << output_name << " = " << score;
+
+        //LOG(INFO) << "Batch " << i << ", " << output_name << " = " << score;
       }
     }
+    LOG(INFO) << "Batch " << i;
   }
+
+  std::ifstream ifterms(FLAGS_terms.c_str());
+  std::string term;
+
+  LOG(INFO) << FLAGS_terms.c_str();
+  vector<std::pair<std::string,int> > terms;
+  int term_label;
+  while (ifterms >> term >> term_label)
+  {
+	  LOG(INFO) << term << " " << term_label;
+	  std::pair<std::string, int> p(term, term_label);
+	  terms.push_back(p);
+  }
+
+  for (int i = 0; i < test_score.size(); ++i) {
+	  //LOG(INFO) << "true classified: " << test_score[i];
+	  std::string term = "none";
+	  for (int j=0; j < terms.size(); ++j)
+	  {
+		  if (terms[j].second == i)
+		  {
+			  term = terms[j].first;
+		  }
+	  }
+
+	  LOG(INFO) << term << "; accuracy: " << test_score[i] / test_num[i] << "; # examples: " << test_num[i];
+  }
+
   loss /= FLAGS_iterations;
   LOG(INFO) << "Loss: " << loss;
+  //LOG(INFO) << "test_score.size " << test_score.size() ;
   for (int i = 0; i < test_score.size(); ++i) {
     const std::string& output_name = caffe_net.blob_names()[
         caffe_net.output_blob_indices()[test_score_output_id[i]]];

@@ -27,7 +27,7 @@ void AccuracyLayer<Dtype>::Reshape(
   CHECK_EQ(bottom[1]->height(), 1);
   CHECK_EQ(bottom[1]->width(), 1);
   n_labels = bottom[0]->count() / bottom[0]->num();
-  (*top)[0]->Reshape(n_labels, 1, 1, 1);
+  (*top)[0]->Reshape(2*n_labels, 1, 1, 1);
   //(*top)[0]->Reshape(1, 1, 1, 1);
 }
 
@@ -69,9 +69,19 @@ void AccuracyLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   }
 
 
-  for (int i=0; i < n_labels; i++){
+  //LOG(INFO) << "labels " << n_labels;
 
-	  (*top)[0]->mutable_cpu_data()[i] = class_accuracy[i] / num_per_class[i];
+  for (int i=0; i < 2*n_labels-1; i+=2){
+
+	  //LOG(INFO) << num_per_class[i];
+
+	  (*top)[0]->mutable_cpu_data()[i] = class_accuracy[(int)(i/2)];
+	  (*top)[0]->mutable_cpu_data()[i+1] = num_per_class[(int)(i/2)];
+
+	 /* else
+	  {
+		  (*top)[0]->mutable_cpu_data()[i] = 0.;
+	  }*/
 
   }
 
