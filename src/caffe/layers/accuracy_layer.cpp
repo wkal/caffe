@@ -42,8 +42,8 @@ void AccuracyLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   vector<Dtype> maxval(top_k_+1);
   vector<int> max_id(top_k_+1);
 
-  CHECK_EQ(n_labels,(int)*std::max_element(bottom_label, bottom_label+num)+1)
-  	  << "number of labels must be equal to ..";
+  //CHECK_EQ(n_labels,(int)*std::max_element(bottom_label, bottom_label+num)+1)
+  //	  << "number of labels must be equal to ..";
   vector<Dtype> class_accuracy(n_labels,0);
   vector<Dtype> num_per_class(n_labels,0);
 
