@@ -29,6 +29,9 @@ DEFINE_string(weights, "",
     "Cannot be set simultaneously with snapshot.");
 DEFINE_string(terms, "",
     "Optional; the term names. ");
+DEFINE_string(confusion, "confusion.txt",
+    "Optional; the confusion file name. ");
+
 DEFINE_int32(iterations, 50,
     "The number of iterations to run.");
 
@@ -133,6 +136,9 @@ int test() {
 
 
 
+  std::ofstream cstream(FLAGS_confusion.c_str());
+
+
   // Set device id and mode
   if (FLAGS_gpu >= 0) {
     LOG(INFO) << "Use GPU with device ID " << FLAGS_gpu;
@@ -152,6 +158,8 @@ int test() {
   vector<int> test_score_output_id;
   vector<float> test_score;
   vector<float> test_num;
+
+  vector<vector<int> > conf_table;
   float loss = 0;
   float score_sum = 0;
   for (int i = 0; i < FLAGS_iterations; ++i) {
@@ -161,28 +169,45 @@ int test() {
     loss += iter_loss;
     int idx = 0;
     for (int j = 0; j < result.size(); ++j) {
-      const float* result_vec = result[j]->cpu_data();
-      for (int k = 0; k < result[j]->count()/2-1; ++k, ++idx) {
-        const float score = result_vec[2*k];
-        const float num_examples = result_vec[2*k+1];
+    	if (j==0) {
+		  const float* result_vec = result[j]->cpu_data();
+		  const int n_label = sqrt(result[j]->count());
+		  LOG(INFO) << result[j]->count() << " " << n_label;
+		  if (i==0) {
+			  vector<int> tmp(n_label,0);
+			  conf_table.resize(n_label,tmp);
+		  }
 
 
-        if (i == 0) {
-          test_score.push_back(score);
-          test_num.push_back(num_examples);
-          test_score_output_id.push_back(j);
-        } else {
-          test_score[idx] += score;
-          test_num[idx] += num_examples;
-        }
-        const std::string& output_name = caffe_net.blob_names()[
-            caffe_net.output_blob_indices()[j]];
+		  for (int k = 0; k < n_label; ++k, ++idx) {
+			  float num_examples = 0;
+			  for (int t = 0; t < n_label; ++t) {
+				  //cstream << result_vec[k*n_label+t] << ", ";
+				  conf_table[k][t] += result_vec[k*n_label+t];
+				  num_examples += result_vec[k*n_label+t];
+			  }
+			  //cstream << "\n";
+			  const float score = result_vec[k*n_label+k];
 
-        //LOG(INFO) << "Batch " << i << ", " << output_name << " = " << score;
-      }
-    }
+			if (i == 0) {
+			  test_score.push_back(score);
+			  test_num.push_back(num_examples);
+			  test_score_output_id.push_back(j);
+			} else {
+			  test_score[idx] += score;
+			  test_num[idx] += num_examples;
+			}
+			const std::string& output_name = caffe_net.blob_names()[
+				caffe_net.output_blob_indices()[j]];
+
+			//LOG(INFO) << "Batch " << i << ", " << output_name << " = " << score;
+		  }
+		}
     LOG(INFO) << "Batch " << i;
+    }
   }
+
+
 
   std::ifstream ifterms(FLAGS_terms.c_str());
   std::string term;
@@ -196,6 +221,14 @@ int test() {
 	  std::pair<std::string, int> p(term, term_label);
 	  terms.push_back(p);
   }
+
+  for (int i=0; i<conf_table.size(); ++i) {
+	  for (int j=0; j<conf_table[i].size(); ++j) {
+		  cstream << conf_table[i][j] << ", ";
+	  }
+	  cstream << "\n";
+  }
+  cstream.close();
 
   for (int i = 0; i < test_score.size(); ++i) {
 	  //LOG(INFO) << "true classified: " << test_score[i];
