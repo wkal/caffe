@@ -182,11 +182,10 @@ int test() {
 		  for (int k = 0; k < n_label; ++k, ++idx) {
 			  float num_examples = 0;
 			  for (int t = 0; t < n_label; ++t) {
-				  //cstream << result_vec[k*n_label+t] << ", ";
 				  conf_table[k][t] += result_vec[k*n_label+t];
 				  num_examples += result_vec[k*n_label+t];
 			  }
-			  //cstream << "\n";
+
 			  const float score = result_vec[k*n_label+k];
 
 			if (i == 0) {
@@ -224,7 +223,7 @@ int test() {
 
   for (int i=0; i<conf_table.size(); ++i) {
 	  for (int j=0; j<conf_table[i].size(); ++j) {
-		  cstream << conf_table[i][j] << ", ";
+		  cstream << conf_table[i][j] << ",";
 	  }
 	  cstream << "\n";
   }
