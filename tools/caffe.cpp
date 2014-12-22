@@ -207,6 +207,13 @@ int test() {
   }
 
 
+  for (int i=0; i<conf_table.size(); ++i) {
+	  for (int j=0; j<conf_table[i].size(); ++j) {
+		  cstream << conf_table[i][j] << ",";
+	  }
+	  cstream << "\n";
+  }
+  cstream.close();
 
   std::ifstream ifterms(FLAGS_terms.c_str());
   std::string term;
@@ -221,13 +228,7 @@ int test() {
 	  terms.push_back(p);
   }
 
-  for (int i=0; i<conf_table.size(); ++i) {
-	  for (int j=0; j<conf_table[i].size(); ++j) {
-		  cstream << conf_table[i][j] << ",";
-	  }
-	  cstream << "\n";
-  }
-  cstream.close();
+
 
   for (int i = 0; i < test_score.size(); ++i) {
 	  //LOG(INFO) << "true classified: " << test_score[i];
