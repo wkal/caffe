@@ -87,7 +87,8 @@ int main(int argc, char** argv) {
   // leveldb
   leveldb::DB* db;
   leveldb::Options options;
-  options.error_if_exists = true;
+  //options.error_if_exists = true;
+  options.error_if_exists = false;
   options.create_if_missing = true;
   options.write_buffer_size = 268435456;
   leveldb::WriteBatch* batch = NULL;
