@@ -51,6 +51,20 @@ static int init_key = -2;
 // The actual forward function. It takes in a cell array of 4-D arrays as
 // input and outputs a cell array.
 
+static mxArray* CreateMxArrayLikeBlob(const Blob<float>& blob) {
+  // Internally, data is stored with dimensions reversed from Caffe's:
+  // e.g., if the Caffe blob axes are (num, channels, height, width),
+  // the matcaffe data is stored as (width, height, channels, num)
+  // where width is the fastest dimension.
+  const int num_axes = blob.num_axes();
+  vector<mwSize> dims(num_axes);
+  for (int blob_axis = 0, mat_axis = num_axes - 1; blob_axis < num_axes;
+       ++blob_axis, --mat_axis) {
+    dims[mat_axis] = static_cast<mwSize>(blob.shape(blob_axis));
+  }
+  return mxCreateNumericArray(num_axes, dims.data(), mxSINGLE_CLASS, mxREAL);
+}
+
 static mxArray* do_forward(const mxArray* const bottom) {
   const vector<Blob<float>*>& input_blobs = net_->input_blobs();
   if (static_cast<unsigned int>(mxGetDimensions(bottom)[0]) !=
@@ -87,11 +101,7 @@ static mxArray* do_forward(const mxArray* const bottom) {
   const vector<Blob<float>*>& output_blobs = net_->ForwardPrefilled();
   mxArray* mx_out = mxCreateCellMatrix(output_blobs.size(), 1);
   for (unsigned int i = 0; i < output_blobs.size(); ++i) {
-    // internally data is stored as (width, height, channels, num)
-    // where width is the fastest dimension
-    mwSize dims[4] = {output_blobs[i]->width(), output_blobs[i]->height(),
-      output_blobs[i]->channels(), output_blobs[i]->num()};
-    mxArray* mx_blob =  mxCreateNumericArray(4, dims, mxSINGLE_CLASS, mxREAL);
+    mxArray* mx_blob = CreateMxArrayLikeBlob(*output_blobs[i]);
     mxSetCell(mx_out, i, mx_blob);
     float* data_ptr = reinterpret_cast<float*>(mxGetPr(mx_blob));
     switch (Caffe::mode()) {
@@ -141,11 +151,7 @@ static mxArray* do_backward(const mxArray* const top_diff) {
   // LOG(INFO) << "End";
   mxArray* mx_out = mxCreateCellMatrix(input_blobs.size(), 1);
   for (unsigned int i = 0; i < input_blobs.size(); ++i) {
-    // internally data is stored as (width, height, channels, num)
-    // where width is the fastest dimension
-    mwSize dims[4] = {input_blobs[i]->width(), input_blobs[i]->height(),
-      input_blobs[i]->channels(), input_blobs[i]->num()};
-    mxArray* mx_blob =  mxCreateNumericArray(4, dims, mxSINGLE_CLASS, mxREAL);
+    mxArray* mx_blob = CreateMxArrayLikeBlob(*input_blobs[i]);
     mxSetCell(mx_out, i, mx_blob);
     float* data_ptr = reinterpret_cast<float*>(mxGetPr(mx_blob));
     switch (Caffe::mode()) {
@@ -213,13 +219,7 @@ static mxArray* do_get_weights() {
       }
 
       for (unsigned int j = 0; j < layer_blobs.size(); ++j) {
-        // internally data is stored as (width, height, channels, num)
-        // where width is the fastest dimension
-        mwSize dims[4] = {layer_blobs[j]->width(), layer_blobs[j]->height(),
-            layer_blobs[j]->channels(), layer_blobs[j]->num()};
-
-        mxArray* mx_weights =
-          mxCreateNumericArray(4, dims, mxSINGLE_CLASS, mxREAL);
+        mxArray* mx_weights = CreateMxArrayLikeBlob(*layer_blobs[j]);
         mxSetCell(mx_layer_cells, j, mx_weights);
         float* weights_ptr = reinterpret_cast<float*>(mxGetPr(mx_weights));
 
@@ -354,9 +354,7 @@ static void read_mean(MEX_ARGS) {
         return;
     }
     data_mean.FromProto(blob_proto);
-    mwSize dims[4] = {data_mean.width(), data_mean.height(),
-                      data_mean.channels(), data_mean.num() };
-    mxArray* mx_blob =  mxCreateNumericArray(4, dims, mxSINGLE_CLASS, mxREAL);
+    mxArray* mx_blob = CreateMxArrayLikeBlob(data_mean);
     float* data_ptr = reinterpret_cast<float*>(mxGetPr(mx_blob));
     caffe_copy(data_mean.count(), data_mean.cpu_data(), data_ptr);
     mexWarnMsgTxt("Remember that Caffe saves in [width, height, channels]"
