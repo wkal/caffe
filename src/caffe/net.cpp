@@ -24,6 +24,14 @@ Net<Dtype>::Net(const NetParameter& param) {
 }
 
 template <typename Dtype>
+Net<Dtype>::Net(const string& param_binary_proto) {
+  NetParameter param;
+  CHECK(param.ParseFromString(param_binary_proto))
+      << "Failed to parse binary proto string as NetParameter.";
+  Init(param);
+}
+
+template <typename Dtype>
 Net<Dtype>::Net(const string& param_file, Phase phase) {
   NetParameter param;
   ReadNetParamsFromTextFileOrDie(param_file, &param);
