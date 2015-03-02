@@ -80,6 +80,12 @@ shared_ptr<Net<Dtype> > Net_Init(
   return net;
 }
 
+shared_ptr<Net<Dtype> > Net_Init_From_Proto(
+    string param_binary_proto) {
+  shared_ptr<Net<Dtype> > net(new Net<Dtype>(param_binary_proto));
+  return net;
+}
+
 // Net construct-and-load convenience constructor
 shared_ptr<Net<Dtype> > Net_Init_Load(
     string param_file, string pretrained_param_file, int phase) {
@@ -187,6 +193,7 @@ BOOST_PYTHON_MODULE(_caffe) {
   bp::class_<Net<Dtype>, shared_ptr<Net<Dtype> >, boost::noncopyable >("Net",
     bp::no_init)
     .def("__init__", bp::make_constructor(&Net_Init))
+    .def("__init__", bp::make_constructor(&Net_Init_From_Proto))
     .def("__init__", bp::make_constructor(&Net_Init_Load))
     .def("_forward", &Net<Dtype>::ForwardFromTo)
     .def("_backward", &Net<Dtype>::BackwardFromTo)

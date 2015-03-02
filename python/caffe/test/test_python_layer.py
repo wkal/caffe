@@ -3,6 +3,7 @@ import tempfile
 import os
 
 import caffe
+from caffe.proto import caffe_pb2
 
 class SimpleLayer(caffe.Layer):
     """A layer that just multiplies by ten"""
@@ -20,24 +21,28 @@ class SimpleLayer(caffe.Layer):
     def backward(self, top, propagate_down, bottom):
         bottom[0].diff[...] = 10 * top[0].diff
 
-def python_net_file():
-    f = tempfile.NamedTemporaryFile(delete=False)
-    f.write("""name: 'pythonnet' force_backward: true
-    input: 'data' input_dim: 10 input_dim: 9 input_dim: 8 input_dim: 7
-    layer { type: 'Python' name: 'one' bottom: 'data' top: 'one'
-      python_param { module: 'test_python_layer' layer: 'SimpleLayer' } }
-    layer { type: 'Python' name: 'two' bottom: 'one' top: 'two'
-      python_param { module: 'test_python_layer' layer: 'SimpleLayer' } }
-    layer { type: 'Python' name: 'three' bottom: 'two' top: 'three'
-      python_param { module: 'test_python_layer' layer: 'SimpleLayer' } }""")
-    f.close()
-    return f.name
+def python_net_param():
+    net_param = caffe_pb2.NetParameter()
+    net_param.name = 'pythonnet'
+    net_param.force_backward = True
+    net_param.input.append('data')
+    input_dims = [10, 9, 8, 7]
+    for dim in input_dims: net_param.input_dim.append(dim)
+    names = ['data', 'one', 'two', 'three']
+    for input_name, name in zip(names[:-1], names[1:]):
+        python_layer = net_param.layer.add()
+        python_layer.name = name
+        python_layer.type = 'Python'
+        python_layer.bottom.append(input_name)
+        python_layer.top.append(name)
+        python_layer.python_param.module = 'test_python_layer'
+        python_layer.python_param.layer = 'SimpleLayer'
+    return net_param
 
 class TestPythonLayer(unittest.TestCase):
     def setUp(self):
-        net_file = python_net_file()
-        self.net = caffe.Net(net_file, caffe.TRAIN)
-        os.remove(net_file)
+        net_param = python_net_param()
+        self.net = caffe.Net(net_param.SerializeToString())
 
     def test_forward(self):
         x = 8
